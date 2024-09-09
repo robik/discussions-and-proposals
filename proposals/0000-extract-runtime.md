@@ -43,8 +43,8 @@ upgrading pattern.
 
 Additionally, there are quite a few missing pieces in the current ecosystem, that from what I now, 
 are hard to add for different reasons, such as `i18n`, `subtleCrypto` among others. There is also 
-an ongoing effort to increase the compatibility with web environments by bringing the WebAPIs to the 
-React Native. 
+an ongoing effort to increase the compatibility with web environments by bringing the 
+[WebAPIs to the React Native](https://github.com/microsoft/rnx-kit/pull/2504). 
 
 Having a package that can iterate separately, working on adding missing features
 independently of React Native UI layer would make bringing the support faster.
@@ -395,7 +395,7 @@ well known and documented runtime,
 This RFC alters (hopefully in a good way) how can we approach future ideas, such as:
 
  - Lean Core (2.0)
- - WebAPI implementation
+ - [React Native WebAPI](https://github.com/microsoft/rnx-kit/pull/2504)
  - Better OOT support
  - [RFC0744: Well-defined event loop processing model](https://github.com/react-native-community/discussions-and-proposals/blob/main/proposals/0744-well-defined-event-loop.md)
    
