@@ -1,24 +1,26 @@
 ---
 title: Extraction of runtime layer
 author: Robert Pasiński <robert.pasinski@callstack.com>
-date: 07-09-2024
+date: 2024-09-07
 ---
+
+> **NOTE**: This is an early draft of the RFC. As it affects most of the RN, it is intended to
+> be a bit more generic and to collect feedback and collectively build a good adoption strategy and detailed approach. 
 
 # RFC0000: Extraction of Runtime layer
 
 ## Summary
 
-Main goal of this RFC is to create a new layer in RN stack, that lives between
-Hermes (jsi) and React Native.
+Main goal of this RFC is to extract a new layer in React Native stack from already existing, shared code, 
+that lives between `jsi` and React Native, reducing redundancy.
 
 Shortly, the goals are:
 
- - Extract the React Native non-ui logic into separate package
+ - Extract the React Native non-ui logic into separate package/layer
  - Keep compatibility with existing code as much as possible
  - Make long term maintenance, versioning and updating easier
  - Make React Native more inclusive towards OOT platforms
-
-The scope of this is pretty big, because of that old architecture is not considered.
+ - Allow faster iterations on headless APIs compatibility (e.g. Web)
 
 ## Motivation
 
@@ -26,27 +28,32 @@ React Native is a very big and complex project. It still continues to grow in si
 and complexity and even more things are planned to be added, or are expected to be.
 
 By splitting the current project into smaller pieces, with explicit API boundaries,
-we should be able to simplify the maintenance and testing in the long run. This, of course would require
-us to specify a "stable" interface to work with. This mosty probably won't be achieved easily and promptly,
-but is a good long term goal to try to achieve.
+we should be able to simplify the maintenance and testing in the long run. This, 
+of course would require us to specify a "stable" interface to work with. This probably 
+won't be achieved easily and promptly, but is a good long term goal to try to achieve.
 
-Understanding the current dependencies and boundaries is also quite problematic and raises the entry barrier to contributing
-to the React Native project.
+Understanding the current dependencies and boundaries is also quite problematic and raises 
+the entry barrier to contributing to the React Native project.
 
 Right now, updating the React Native projects is a long and troubling process.
-This is (non exclusively) caused by the fact that the scope of changes between version goes across many API surfaces.
-Having the (limited) possibility to update the runtime version in a project independently of UI would make it
-more approachable by reducing the all-or-nothing upgrading pattern.
+This is (non exclusively) caused by the fact that the scope of changes between version goes 
+across many API surfaces. Having the (limited) possibility to update the runtime version 
+in a project independently of UI would make it more approachable by reducing the all-or-nothing 
+upgrading pattern.
 
-Additionally, there are quite a few missing pieces in the current ecosystem, that from what I now, are hard to add 
-for different reasons, such as `i18n`, `subtleCrypto` and others. There is also 
-an ongoing effort to increase the compatibility with web environments by bringing 
-the WebAPIs to the React Native. 
-It should be possible to alter some parts of the React Native without creating and maintaining
+Additionally, there are quite a few missing pieces in the current ecosystem, that from what I now, 
+are hard to add for different reasons, such as `i18n`, `subtleCrypto` amonth others. There is also 
+an ongoing effort to increase the compatibility with web environments by bringing the WebAPIs to the 
+React Native. 
+
+Having a package that can iterate separately, working on adding missing features
+independently of React Native UI layer would make bringing the support faster.
+Currently, working on bringing new APIs to React Native from Web requires us to create UI to even be able to test them,
+or otherwise is very hard to do.
+
+It should be possible to alter some parts of React Native without creating and maintaining
 a fork or a long list of internal patches.
 
-Finally, working on bringing new APIs to React Native from Web requires us to create UI to even be able to test them, 
-or otherwise is very hard to do.
 
 ### Goals
 
@@ -57,7 +64,7 @@ to create perfectly fit runtime variant they need for the application.**
 
 To do this, we should have an extensible layer, that can be built upon and configured, just like LEGO blocks. 
 
-For example, if the project is in need for the I18n API (and therefore ICU), and they are ready to accept the 
+For example, if the project is in need for the i18n API (and therefore ICU), and they are ready to accept the 
 drawbacks of increased app binary, it should be easily doable, without forking the React Native.
 The same can be said about other APIs, such as `crypto`, where they might want to use our
 provided solution, not use it at all, or use in-house closed source solution.
@@ -106,8 +113,15 @@ This includes, but is not limited to:
  - JS engine management
  - C++-only Turbo Module hosting
 
-And ideally (out of scope for this RFC):
- - DevTools interface and debugging host (long term, after interface gets stabilized)
+And ideally, in the future (out of scope for this RFC):
+ - DevTools interface and debugging host (long term, after the interface gets stabilized)
+ - Handling of Shared and Dedicated Workers
+
+`react-native(-core)` would then focus mostly on:
+
+  - Shadow Nodes
+  - Rendering
+  - UI TurboModules (?)
 
 Having a runtime layer extract some of the pieces to shared layer:
 
@@ -145,6 +159,7 @@ There are two approaches we can further discover:
  - Leveraging dynamic library constructor and destructor functions (`attribute(constructor)`/`attribute(destructor)`)
    
    This can be hard to do right, but ideally would be build-time only without any changes required in code or at runtime.
+   Unfortunately this only work with dynamic libraries, so we would require all modules to be linked dynamically which is suboptimal.
   
  - Exposing a Well known function that registers itself in React Native runtime 
    
@@ -153,20 +168,105 @@ There are two approaches we can further discover:
    modules in code in order to load them.
 
 Application develop should be able to decide which of the libraries should be linked. React Native would then
-depend on the built runtime library.
+depend on the built runtime library. Both static linking and dynamic linking should be supported.
 
 ### Per-Platform implementation
 
 Suggested approach still allows developers to have runtime level TurboModules use platform specific code
 by linking different libraries depending on the target platform.
 
+Leveraging the "take what you need only" approach allows to tailor the final application bundle just as needed
+for each platform. This, however requires additional work from the build tool.
+
+### Faster iterations & versioning
+
+Having `react-native-runtime` and `react-native` being versioned and released independently allows for simpler updating in
+cases when both are compatible. It might not happen shortly after transition, but when the interfaces
+exposed from the `runtime` become mature enough, this should be easily doable.
+
+For example, consider a mobile application that needs a feature added in new `react-native-runtime` release,
+which added support for `navigator.clipboard` API.
+
+Considering we reached the point the interface is mostly stable, the `react-native-runtime` version can be updated
+without impacting `react-native` library.
+
+This also makes the updating process easier.
+
+For matching the `react-native-runtime` and `react-native` versions, we could use:
+
+ - peer dependency in `react-native-core`
+ - `package.json` `engine` field
+
 ### Codegen
 
+Because the TurboModule bridging would live in `react-native-runtime`, the codegen would need to be updated.
 
+### Old architecture
+
+TBD
+
+### Transition period
+
+There are several approaches we can perform to allow transitioning to new approach:
+
+#### C++ Code
+
+For transition period, we can re-export the symbols from `react-native-runtime` in `react-native` headers.
+A new C++ compile-time flag can be added to allow branching in the code depending on whenever the runtime is available or not.
+
+```cpp
+#ifdef RN_HAS_RUNTIME
+#include <react-native-runtime.h>
+#else
+#include <react-native.h>
+#endif
+```
+
+or alternatively using [`__has_include` macro](https://clang.llvm.org/docs/LanguageExtensions.html#has-include):
+
+```cpp
+#if __has_include(<react-native-runtime.h>)
+#include <react-native-runtime.h>
+#endif
+```
+
+#### Application code
+
+For end-user applications we can reduce the impact and make `react-native` link the `react-native-runtime` library 
+(either statically or dynamically) by default. User could opt out of this feature and then link the runtime
+library manually.
+
+This conditional dependency would need to live in both `react-native` and (reversed) in user project during the
+transition.
+
+Conditional dependencies are supported by all build systems:
+
+ - [Gradle](https://www.baeldung.com/gradle-conditional-dependencies)
+ - CocoaPods
+
+### Potential `react-native-core` extraction
+
+Mentioned as a possibility during Core Contributors Summit 2024, extracting `react-native-core`, and therefore
+extracting `ios` and `android` from React Native as separate packages would fit perfectly with the suggested approach.
+
+`react-native-core` would then depend on `react-native-runtime` implementing generic UI code, exposing ShadowNode API
+allowing other platforms to depend on it.
+
+Such separation of layers would make it more analogous to how React Web is structured right now:
+
+![Layers comparison](./assets/0000-rn-diagram-matching-layers.png)
+
+### Allowing more OOT composability
+
+If at any point a new platform needs to make alternations in the runtime it still can
+use existing `react-native` package for the UI. The same goes for the inverse if a platform,
+for any reason, needs to have its own runtime.
 
 ## Drawbacks
 
- - Extracting API surface layer is a big task cost and time-wise
+ - Extracting API surface layer is always a big task cost and time-wise
+ - We have to migrate to this approach affecting external libraries and applications.
+ - Potential version incompatibilities between RN-runtime and RN
 
 ## Alternatives
 
@@ -203,12 +303,14 @@ well known and documented runtime,
 
 ## Future opportunities
 
- - Possible NAPI (Node native API) integration with `react-native-package`
+ - Possible NAPI (Node native API) integration with `react-native-runtime`
  - Because TurboModules would be UI agnostic, we could expose the C API for Turbo Modules, which will make
    us able to write turbo modules using other native languages such Rust, Zig, Go, Swift and any other language that 
- - is compatible with C API, which most of them are.
+   is compatible with C API, which most of them are.
  - We can implement support for `package.json` `engines` field to ensure correct version
    of runtime is used.
+ - Separate runtime layer allows for much more possibilities to use React Native, e.g. using NodeJS runtime
+   or embedding it into already existing JS runtime (e.g. game engine, browsers, desktop apps)
 
 ### Impacted RFCs/ideas
 
