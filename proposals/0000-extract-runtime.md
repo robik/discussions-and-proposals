@@ -352,7 +352,16 @@ None considered that would accomplish the same goals.
 
 ## Adoption strategy
 
-If we implement this proposal, how will existing React Native developers adopt it? Is this a breaking change? Can we write a codemod? Should we coordinate with other projects or libraries?
+For adoption, we can make `react-native` conditionally and by default link `react-native-runtime`. This should be transparent
+to `react-native` users. If users want to configure and build their own they can opt out of 
+this behavior by disabling a configuration flag. This will require them to own
+the `react-native-runtime` dependency.
+
+As already mentioned, we can re-export symbols from `react-native` headers to reduce breaking changes.
+
+This change should be coordinated with external libraries.
+
+This change should be completely transparent for JavaScript code.
 
 ## How we teach this
 
