@@ -42,47 +42,59 @@ in a project independently of UI would make it more approachable by reducing the
 upgrading pattern.
 
 Additionally, there are quite a few missing pieces in the current ecosystem, that from what I now, 
-are hard to add for different reasons, such as `i18n`, `subtleCrypto` amonth others. There is also 
+are hard to add for different reasons, such as `i18n`, `subtleCrypto` among others. There is also 
 an ongoing effort to increase the compatibility with web environments by bringing the WebAPIs to the 
 React Native. 
 
 Having a package that can iterate separately, working on adding missing features
 independently of React Native UI layer would make bringing the support faster.
-Currently, working on bringing new APIs to React Native from Web requires us to create UI to even be able to test them,
-or otherwise is very hard to do.
+Currently, React Native tightly couples its feature and UI code, making them non-separable. 
+Given that React Native plans on integrating more closely with WebAPIs (or a subset), this
+coupling makes it hard to work on these APIs as well as test them, slowing down the development speed,
+as we need to create a UI to even be able to test them, or otherwise is very hard to do (as it seems
+to not be a supported development path).
 
-It should be possible to alter some parts of React Native without creating and maintaining
-a fork or a long list of internal patches.
-
+It should be possible to alter or swap some parts of React Native without creating and maintaining
+a fork or a long list of internal patches. A plug-and-play architecture is a sign of good design,
+allows greater modularity, and facilities separation of concerns and decoupling.
 
 ### Goals
 
 **The main goal is to make it possible for end-users, by altering build and runtime configuration,
 to create perfectly fit runtime variant they need for the application.**
 
-> __NOTE__: We are still talking about headless APIs, not related to platform UIs.
+> __NOTE__: In this context we are talking about headless APIs, not related to UI.
 
 To do this, we should have an extensible layer, that can be built upon and configured, just like LEGO blocks. 
 
-For example, if the project is in need for the i18n API (and therefore ICU), and they are ready to accept the 
-drawbacks of increased app binary, it should be easily doable, without forking the React Native.
-The same can be said about other APIs, such as `crypto`, where they might want to use our
-provided solution, not use it at all, or use in-house closed source solution.
+For example, if the project is in need for the i18n API, and they are ready to accept the 
+drawbacks of increased app binary and increased app startup time, it should be easily doable, 
+without forking the React Native. The same can be said about other APIs, such as `crypto`, 
+where they might want to use our provided solution, not use it at all, or use in-house closed 
+source solution.
 
 The same can be said about changing the JS engine. The proposed layer would take care of allowing user
 to use another engine by using the already existing `jsi` interface. JS engine should be treated
 like a building block similar to others that can be changed easily by build time configuration.
 
 Right now, we have something similar already: the C++-only TurboModules, which are kind of tightly coupled 
-with the rest of the React Native and the distinction can be quite confusing for newcomers.
+with the rest of the React Native and the distinction can be a bit confusing for newcomers.
 
 Such blocks would have access to Event Loop and JS engine, so new globals can be added in as-needed
 basis.
+
+Taking WebAPIs as an example, having their implementations split across multiple different TurboModules,
+we can release and version them independently further simplifying update process.
+In case the `react-natime-runtime` changes in a breaking manner, we can tightly couple the versions
+of such TurboModules or make them part of `react-native-runtime` that are extracted later, when
+the breaking changes become less frequent.
 
 __Secondary goal is to be able to develop and test those headless modules easily, on the CI pipeline without visual environment__.
 
 By having the possibility to run the "blocks" (C++ only turbo modules) in a headless JS environment we
 are able to test the implementations easily on many CI platforms and on different JS engines (ideally).
+
+A side effect of this is we can perhaps achieve faster build times both on CI and locally, resulting in lower cost of such pipelines.
 
 __Tertiary goal is to bring OOT platforms closer to first-class citizens__
 
@@ -90,6 +102,12 @@ If a Turbo Module does not need access to UI in any way to provide its features,
 rather than `react-native` would make it easier to maintain for currently OOT platforms (such as rn-windows and rn-mac) where
 the current `react-native` code cannot be re-used in 100% (needs further clarification). 
 Right now we are biased towards mobile platforms only.
+
+### Non-goals
+
+This RFC does **not** aim to:
+
+ - Replace or deprecate proposal [Move iOS and Android Specific Code to Their Own Packages](https://github.com/react-native-community/discussions-and-proposals/pull/49)
 
 ## Detailed design
 
@@ -117,11 +135,17 @@ And ideally, in the future (out of scope for this RFC):
  - DevTools interface and debugging host (long term, after the interface gets stabilized)
  - Handling of Shared and Dedicated Workers
 
-`react-native(-core)` would then focus mostly on:
+`react-native` would then focus mostly on:
 
   - Shadow Nodes
   - Rendering
   - UI TurboModules (?)
+
+The parts of the React Native that are not stable enough or are just being tested out
+can be kept in `react-native` package until becoming more stable, with less frequent breaking changes
+and then moved to `react-native-runtime` with more stable interface.
+
+---
 
 Having a runtime layer extract some of the pieces to shared layer:
 
@@ -142,8 +166,39 @@ This would, for example, allow community to implement custom storage solution us
 ideally matching the DOM spec. By having the DevTools Interface as part of this package, they can also
 hook up into `Storage` tab from `Dev tools` to provide excellent Developer Experience.
 
+While the `react-native-runtime` would need to maintain those generic interfaces, the React Native community
+can contribute with implementations of such interfaces (JS, EventLoop and DevTools).
+
 The same can be done with e.g. networking, where C++-modules would be able to hook up to `Networking`
-tab to report and display network requests to provide the best DX possible.
+tab to report and display network requests to provide the best DX possible. This would greatly benefit
+brownfield applications where most of the code is still native.
+
+### Building tools
+
+The Runtime and its turbo modules could be built using CMake only, as they are all written in C++,
+leaving room for React Native or perhaps even React Native Frameworks to use any other build tool that
+is in any way compatible with CMake.
+
+For example, an example application project graph may look like following:
+
+```
+my-rn-app
+├── react-native-runtime
+│   ├── lib-rnrt-fetch
+│   ├── lib-rnrt-crypto
+│   ├── lib-rnrt-mmkv
+│   │   ├── android
+│   │   ├── ios
+│   │   └── windows
+│   └── libhermes
+├── react-native
+│   ├── react-native-gesture-handler
+│   ├── react-native-maps
+...
+```
+
+Integration with another languages can be achieved by leveraging C++ API or creating a C API compatible
+API subset. It is, however, out of scope for this RFC.
 
 ### Runtime Composability
 
@@ -178,6 +233,28 @@ by linking different libraries depending on the target platform.
 Leveraging the "take what you need only" approach allows to tailor the final application bundle just as needed
 for each platform. This, however requires additional work from the build tool.
 
+An example of such library that requires per-platform implementation and also is UI independent is `react-native-mmkv`.
+It implements a generic, headless API that hooks up to correct storage depending on the platform.
+
+A potential approach for per-platform implementation is to split the libraries and user C++ interop:
+
+```
+├── lib-rnrt-mmkv-core
+├── lib-rnrt-mmkv-android (JNI)
+```
+
+This can result in (subjectively healthy) distinction of platform specific code that either depends on UI or not.
+Consider Android and iOS platforms being split into:
+
+ - Android
+   - `lib-android`
+   - `lib-android-ui`
+ - iOS
+    - `lib-ios` (or perhaps `lib-apple`, as this is UI independent)
+    - `lib-ios-ui`
+
+This would benefit OOT platforms where only UI needs to be changed. 
+
 ### Faster iterations & versioning
 
 Having `react-native-runtime` and `react-native` being versioned and released independently allows for simpler updating in
@@ -203,7 +280,8 @@ Because the TurboModule bridging would live in `react-native-runtime`, the codeg
 
 ### Old architecture
 
-TBD
+As Old architecture is deprecated in favor of new architecture. The bridge can be kept in `react-native`
+for transition period.
 
 ### Transition period
 
@@ -246,8 +324,8 @@ Conditional dependencies are supported by all build systems:
 
 ### Potential `react-native-core` extraction
 
-Mentioned as a possibility during Core Contributors Summit 2024, extracting `react-native-core`, and therefore
-extracting `ios` and `android` from React Native as separate packages would fit perfectly with the suggested approach.
+Mentioned as a possibility during Core Contributors Summit 2024, [extracting platforms from `react-native`](https://github.com/react-native-community/discussions-and-proposals/pull/49), and therefore
+creating a `react-native-core` layer from would fit perfectly with the suggested approach.
 
 `react-native-core` would then depend on `react-native-runtime` implementing generic UI code, exposing ShadowNode API
 allowing other platforms to depend on it.
@@ -314,12 +392,16 @@ well known and documented runtime,
 
 ### Impacted RFCs/ideas
 
-This RFC alters (hopefully in a good way) how can be approach future ideas, such as:
+This RFC alters (hopefully in a good way) how can we approach future ideas, such as:
 
  - Lean Core (2.0)
  - WebAPI implementation
  - Better OOT support
- - React Native Frameworks
+ - [RFC0744: Well-defined event loop processing model](https://github.com/react-native-community/discussions-and-proposals/blob/main/proposals/0744-well-defined-event-loop.md)
+   
+   The event loop would live in the `react-native-runtime` package.    
+
+ - [Move iOS and Android Specific Code to Their Own Packages](https://github.com/react-native-community/discussions-and-proposals/pull/49)
 
 ## Changelog
 
