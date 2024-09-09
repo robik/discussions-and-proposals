@@ -19,8 +19,10 @@ Shortly, the goals are:
  - Extract the React Native non-ui logic into separate package/layer
  - Keep compatibility with existing code as much as possible
  - Make long term maintenance, versioning and updating easier
- - Make React Native more inclusive towards OOT platforms
+ - Make React Native more inclusive towards OOT (out of tree) platforms
  - Allow faster iterations on headless APIs compatibility (e.g. Web)
+
+> OOT (out of tree platforms) refer to platforms that are not part of the main repo.
 
 ## Motivation
 
@@ -96,7 +98,7 @@ are able to test the implementations easily on many CI platforms and on differen
 
 A side effect of this is we can perhaps achieve faster build times both on CI and locally, resulting in lower cost of such pipelines.
 
-__Tertiary goal is to bring OOT platforms closer to first-class citizens__
+__Tertiary goal is to bring OOT (out of tree) platforms closer to first-class citizens__
 
 If a Turbo Module does not need access to UI in any way to provide its features, having it work with `react-native-runtime`
 rather than `react-native` would make it easier to maintain for currently OOT platforms (such as rn-windows and rn-mac) where
