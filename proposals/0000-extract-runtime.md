@@ -43,7 +43,7 @@ across many API surfaces. Having the (limited) possibility to update the runtime
 in a project independently of UI would make it more approachable by reducing the all-or-nothing 
 upgrading pattern.
 
-Additionally, there are quite a few missing pieces in the current ecosystem, that from what I now, 
+Additionally, there are quite a few missing pieces in the current ecosystem, that from what I know, 
 are hard to add for different reasons, such as `i18n`, `subtleCrypto` among others. There is also 
 an ongoing effort to increase the compatibility with web environments by bringing the 
 [WebAPIs to the React Native](https://github.com/microsoft/rnx-kit/pull/2504). 
