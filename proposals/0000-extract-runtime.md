@@ -11,18 +11,14 @@ date: TBD
 
 ## Summary
 
-Main goal of this RFC is to extract a new layer in React Native stack from already existing, shared code, 
-that lives between `jsi` and React Native, reducing redundancy.
+Main goal of this RFC is to extract a new Runtime layer in React Native stack to hold the event loop, Turbo Modules host, JS host and debugger host.
 
-Shortly, the goals are:
+This new layer would allow to:
 
- - Extract the React Native non-ui logic into separate package/layer
- - Keep compatibility with existing code as much as possible
- - Make long term maintenance, versioning and updating easier
- - Make React Native more inclusive towards OOT (out of tree) platforms
+ - Alter runtime configuration from the user-space to create perfectly fit runtime variant they need for the application or platform
+ - Create a clear boundry between UI and headless APIs
+ - Make it easier to adopt and customize OOT (out of tree) platforms
  - Allow faster iterations on headless APIs compatibility (e.g. Web)
-
-> OOT (out of tree platforms) refer to platforms that are not part of the main repo.
 
 ## Motivation
 
