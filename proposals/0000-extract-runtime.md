@@ -342,7 +342,7 @@ for any reason, needs to have its own runtime.
 
 ## Drawbacks
 
- - Extracting API surface layer is always a big task cost and time-wise
+ - Extracting and maintaining a public API for the `react-native-runtime` package
  - We have to migrate to this approach affecting external libraries and applications.
  - Potential version incompatibilities between RN-runtime and RN
 
