@@ -26,8 +26,6 @@ Shortly, the goals are:
 
 ## Motivation
 
-React Native is a very big and complex project. It still continues to grow in size 
-and complexity and even more things are planned to be added, or are expected to be.
 
 By splitting the current project into smaller pieces, with explicit API boundaries,
 we should be able to simplify the maintenance and testing in the long run. This, 
