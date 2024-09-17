@@ -1,7 +1,7 @@
 ---
 title: Extraction of runtime layer
 author: Robert Pasiński <robert.pasinski@callstack.com>
-date: 2024-09-07
+date: TBD
 ---
 
 > **NOTE**: This is an early draft of the RFC. As it affects most of the RN, it is intended to
