@@ -61,11 +61,11 @@ to create perfectly fit runtime variant they need for the application.**
 
 > __NOTE__: In this context we are talking about headless APIs, not related to UI.
 
-To do this, we should have an extensible layer, that can be built upon and configured, just like LEGO blocks. 
+To do this, we should have an extensible layer, that can be built upon and configured, just like LEGO building blocks. 
 
-For example, if the project is in need for the i18n API, and they are ready to accept the 
+For example, if the project is in need for the native i18n API (without polyfills), and they are ready to accept the 
 drawbacks of increased app binary and increased app startup time, it should be easily doable, 
-without forking the React Native. The same can be said about other APIs, such as `crypto`, 
+without forking the React Native. The same can be said about other APIs, such as WebAPI compatible `crypto`/`subtleCrypto`, 
 where they might want to use our provided solution, not use it at all, or use in-house closed 
 source solution.
 
@@ -76,7 +76,7 @@ like a building block similar to others that can be changed easily by build time
 Right now, we have something similar already: the C++-only TurboModules, which are kind of tightly coupled 
 with the rest of the React Native and the distinction can be a bit confusing for newcomers.
 
-Such blocks would have access to Event Loop and JS engine, so new globals can be added in as-needed
+Such building blocks would have access to Event Loop and JS engine, so new globals can be added in as-needed
 basis.
 
 Taking WebAPIs as an example, having their implementations split across multiple different TurboModules,
@@ -339,7 +339,8 @@ for any reason, needs to have its own runtime.
 ## Drawbacks
 
  - Extracting and maintaining a public API for the `react-native-runtime` package
- - We have to migrate to this approach affecting external libraries and applications.
+ - We have to migrate to this approach affecting external libraries and applications. This is potentially not a breaking change. 
+   But some libraries may need to be updated to e.g. depend on `react-native-runtime` rather than `react-native`.
  - Potential version incompatibilities between RN-runtime and RN
 
 ## Alternatives
