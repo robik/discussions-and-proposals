@@ -11,17 +11,18 @@ date: TBD
 
 ## Summary
 
-Main goal of this RFC is to extract a new Runtime layer in React Native stack to hold the event loop, Turbo Modules host, JS host and debugger host.
+Main goal of this RFC is to extract a new Runtime layer in React Native stack to hold the event loop, Turbo Modules host, JS host and debugger host and
+implementation of Web/Node compatible APIs.
+This layer is referred in this RFC as `react-native-runtime`.
 
 This new layer would allow to:
 
  - Alter runtime configuration from the user-space to create perfectly fit runtime variant they need for the application or platform
- - Create a clear boundry between UI and headless APIs
+ - Create a clear boundary between UI and headless APIs
  - Make it easier to adopt and customize OOT (out of tree) platforms
  - Allow faster iterations on headless APIs compatibility (e.g. Web)
 
 ## Motivation
-
 
 By splitting the current project into smaller pieces, with explicit API boundaries,
 we should be able to simplify the maintenance and testing in the long run. This, 
@@ -125,7 +126,7 @@ This includes, but is not limited to:
 
  - Event Loop
  - JS engine management
- - C++-only Turbo Module hosting
+ - C++-only Turbo Module hosting - platform related code can also be handled here, but not UI related
 
 And ideally, in the future (out of scope for this RFC):
  - DevTools interface and debugging host (long term, after the interface gets stabilized)
@@ -135,7 +136,7 @@ And ideally, in the future (out of scope for this RFC):
 
   - Shadow Nodes
   - Rendering
-  - UI TurboModules (?)
+  - UI TurboModules (UI framework dependent modules)
 
 The parts of the React Native that are not stable enough or are just being tested out
 can be kept in `react-native` package until becoming more stable, with less frequent breaking changes
@@ -253,9 +254,9 @@ This would benefit OOT platforms where only UI needs to be changed.
 
 ### Faster iterations & versioning
 
-Having `react-native-runtime` and `react-native` being versioned and released independently allows for simpler updating in
+We could have `react-native-runtime` and `react-native` be versioned and released independently, which allows for simpler updating in
 cases when both are compatible. It might not happen shortly after transition, but when the interfaces
-exposed from the `runtime` become mature enough, this should be easily doable.
+exposed from the `runtime` become mature enough, this should be easily doable. It is not required, but possible.
 
 For example, consider a mobile application that needs a feature added in new `react-native-runtime` release,
 which added support for `navigator.clipboard` API.
