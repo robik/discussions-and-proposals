@@ -91,7 +91,7 @@ __Secondary goal is to be able to develop and test those headless modules easily
 By having the possibility to run the "blocks" (C++ only turbo modules) in a headless JS environment we
 are able to test the implementations easily on many CI platforms and on different JS engines (ideally).
 
-A side effect of this is we can perhaps achieve faster build times both on CI and locally, resulting in lower cost of such pipelines.
+A side effect of this is we can probably achieve faster build times both on CI and locally, resulting in lower cost of such pipelines.
 
 __Tertiary goal is to bring OOT (out of tree) platforms closer to first-class citizens__
 
