@@ -157,11 +157,13 @@ The new layer would take care of `jsi` interface surface and let React Native (c
 focus on working with UI and executing the user code, no matter the engine is currently selected.
 
 At the heart of `react-native-runtime` would be the event-loop and JS interface, on which other building blocks 
-would be based on.
+would be based on, e.g. augumenting `globalThis`, `navigator` and `window` objects.
 
 This would, for example, allow community to implement custom storage solution using `localStorage` API,
 ideally matching the DOM spec. By having the DevTools Interface as part of this package, they can also
-hook up into `Storage` tab from `Dev tools` to provide excellent Developer Experience.
+hook up into `Storage` tab from `Dev tools` to provide excellent Developer Experience. 
+Because that would be handled by `runtime`, it can be developed and tested without UI all 
+using a public react native runtime API.
 
 While the `react-native-runtime` would need to maintain those generic interfaces, the React Native community
 can contribute with implementations of such interfaces (JS, EventLoop and DevTools).
@@ -176,25 +178,30 @@ The Runtime and its turbo modules could be built using CMake only, as they are a
 leaving room for React Native or perhaps even React Native Frameworks to use any other build tool that
 is in any way compatible with CMake.
 
-For example, an example application project graph may look like following:
+For example, an example application project dependency graph may look like following:
 
 ```
 my-rn-app
 ├── react-native-runtime
-│   ├── lib-rnrt-fetch
-│   ├── lib-rnrt-crypto
-│   ├── lib-rnrt-mmkv
-│   │   ├── android
-│   │   ├── ios
-│   │   └── windows
-│   └── libhermes
+│   └── jsi
 ├── react-native
-│   ├── react-native-gesture-handler
-│   ├── react-native-maps
+│   └── react-native-runtime
+├── lib-rnrt-fetch
+│   └── react-native-runtime
+├── lib-rnrt-crypto
+│   └── react-native-runtime
+├── lib-rnrt-mmkv
+│   └── react-native-runtime
+├── lib-rnrt-mmkv-android
+│   └── android
+├── react-native-gesture-handler
+│   └── react-native
+├── react-native-maps
+│   └── react-native
 ...
 ```
 
-Integration with another languages can be achieved by leveraging C++ API or creating a C API compatible
+Integration with another languages can be achieved by leveraging C++ API or creating a C compatible
 API subset. It is, however, out of scope for this RFC.
 
 ### Runtime Composability
@@ -222,6 +229,14 @@ There are two approaches we can further discover:
 Application develop should be able to decide which of the libraries should be linked. React Native would then
 depend on the built runtime library. Both static linking and dynamic linking should be supported.
 
+### Alternative runtimes
+
+By having an extracted runtime layer, on top of which we can add building blocks, we allow the possibility of having
+a third party (or internal) runtime that is tailored exactly for the needs of the developers.
+
+For example, one can create a specialized runtime that is tailored for desktop or consoles. For such devices,
+which usually have more memory, you can reduce number of computations by leveraging cache more, among other things.
+
 ### Per-Platform implementation
 
 Suggested approach still allows developers to have runtime level TurboModules use platform specific code
@@ -233,7 +248,7 @@ for each platform. This, however requires additional work from the build tool.
 An example of such library that requires per-platform implementation and also is UI independent is `react-native-mmkv`.
 It implements a generic, headless API that hooks up to correct storage depending on the platform.
 
-A potential approach for per-platform implementation is to split the libraries and user C++ interop:
+A potential approach for per-platform implementation is to split the library and use C++ interop:
 
 ```
 ├── lib-rnrt-mmkv-core
@@ -241,16 +256,7 @@ A potential approach for per-platform implementation is to split the libraries a
 ```
 
 This can result in (subjectively healthy) distinction of platform specific code that either depends on UI or not.
-Consider Android and iOS platforms being split into:
 
- - Android
-   - `lib-android`
-   - `lib-android-ui`
- - iOS
-    - `lib-ios` (or perhaps `lib-apple`, as this is UI independent)
-    - `lib-ios-ui`
-
-This would benefit OOT platforms where only UI needs to be changed. 
 
 ### Faster iterations & versioning
 
@@ -324,7 +330,7 @@ Conditional dependencies are supported by all build systems:
 Mentioned as a possibility during Core Contributors Summit 2024, [extracting platforms from `react-native`](https://github.com/react-native-community/discussions-and-proposals/pull/49), and therefore
 creating a `react-native-core` layer from would fit perfectly with the suggested approach.
 
-`react-native-core` would then depend on `react-native-runtime` implementing generic UI code, exposing ShadowNode API
+`react-native-core` (or `react-native-ui`) would then depend on `react-native-runtime` implementing generic UI code, exposing ShadowNode API
 allowing other platforms to depend on it.
 
 Such separation of layers would make it more analogous to how React Web is structured right now:
@@ -336,6 +342,19 @@ Such separation of layers would make it more analogous to how React Web is struc
 If at any point a new platform needs to make alternations in the runtime it still can
 use existing `react-native` package for the UI. The same goes for the inverse if a platform,
 for any reason, needs to have its own runtime.
+
+### How it impacts OOT platforms?
+
+This proposal affects out of tree platforms in such a way that there will have more flexibility with
+interoperating with React Native.
+
+As there will be two packages with smaller API surface, it should be easier to:
+
+ - Create own runtime / UI layer if ever needed
+ - Manage and maintain patches
+ - Updating to newer versions
+ - Should be easier to incorporate into OOT build systems
+
 
 ## Drawbacks
 
