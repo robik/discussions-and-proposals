@@ -55,6 +55,10 @@ It should be possible to alter or swap some parts of React Native without creati
 a fork or a long list of internal patches. A plug-and-play architecture is a sign of good design,
 allows greater modularity, and facilities separation of concerns and decoupling.
 
+It should be possible to replace the runtime layer with another implementation,
+that can be, for example, more tailored towards embedded devices or requires integration
+with client provided solutions.
+
 ### Goals
 
 **The main goal is to make it possible for end-users, by altering build and runtime configuration,
@@ -156,21 +160,25 @@ look more like the following (with additional APIs the user decided to add):
 The new layer would take care of `jsi` interface surface and let React Native (core/UI)
 focus on working with UI and executing the user code, no matter the engine is currently selected.
 
-At the heart of `react-native-runtime` would be the event-loop and JS interface, on which other building blocks 
-would be based on, e.g. augumenting `globalThis`, `navigator` and `window` objects.
+At the heart of `react-native-runtime` would be the event-loop, JS interface and turbo module host, on which other building blocks 
+would be based on, e.g. augmenting `globalThis`, `navigator` and `window` objects with new APIs.
 
-This would, for example, allow community to implement custom storage solution using `localStorage` API,
-ideally matching the DOM spec. By having the DevTools Interface as part of this package, they can also
+This would, for example, allow community to implement custom storage solution using `localStorage` WebAPI,
+ideally matching the DOM spec. This library can be a turbo module that hooks up to the runtime and uses the 
+exposed event loop, JS interface and potentially DevTools API exposing the `localStorage` in the `window` object.
+
+By having the DevTools Interface as part of this package, they can also
 hook up into `Storage` tab from `Dev tools` to provide excellent Developer Experience. 
 Because that would be handled by `runtime`, it can be developed and tested without UI all 
 using a public react native runtime API.
 
-While the `react-native-runtime` would need to maintain those generic interfaces, the React Native community
-can contribute with implementations of such interfaces (JS, EventLoop and DevTools).
 
 The same can be done with e.g. networking, where C++-modules would be able to hook up to `Networking`
 tab to report and display network requests to provide the best DX possible. This would greatly benefit
 brownfield applications where most of the code is still native.
+
+Ideally, there would be zero built-in turbo modules, and we allow to extend the runtime from user space
+via some form of configuration (potentially at build tool level).
 
 ### Building tools
 
