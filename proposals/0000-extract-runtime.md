@@ -24,40 +24,40 @@ This new layer would allow to:
 
 ## Motivation
 
-By splitting the current project into smaller pieces, with explicit API boundaries,
-we should be able to simplify the maintenance and testing in the long run. This, 
-of course would require us to specify a "stable" interface to work with. This probably 
-won't be achieved easily and promptly, but is a good long term goal to try to achieve.
+1. By splitting the current project into smaller pieces, with explicit API boundaries,
+   we should be able to simplify the maintenance and testing in the long run. This, 
+   of course would require us to specify a "stable" interface to work with. This probably 
+   won't be achieved easily and promptly, but is a good long term goal to try to achieve.
 
-Understanding the current dependencies and boundaries is also quite problematic and raises 
-the entry barrier to contributing to the React Native project.
+   Understanding the current dependencies and boundaries is also quite problematic and raises 
+   the entry barrier to contributing to the React Native project.
 
-Right now, updating the React Native projects is a long and troubling process.
-This is (non exclusively) caused by the fact that the scope of changes between version goes 
-across many API surfaces. Having the (limited) possibility to update the runtime version 
-in a project independently of UI would make it more approachable by reducing the all-or-nothing 
-upgrading pattern.
+2. Right now, updating the React Native projects is a long and troubling process.
+   This is (non exclusively) caused by the fact that the scope of changes between version goes 
+   across many API surfaces. Having the (limited) possibility to update the runtime version 
+   in a project independently of UI would make it more approachable by reducing the all-or-nothing 
+   upgrading pattern.
 
-Additionally, there are quite a few missing pieces in the current ecosystem, that from what I know, 
-are hard to add for different reasons, such as `i18n`, `subtleCrypto` among others. There is also 
-an ongoing effort to increase the compatibility with web environments by bringing the 
-[WebAPIs to the React Native](https://github.com/microsoft/rnx-kit/pull/2504). 
+3. There are quite a few missing pieces in the current ecosystem, that from what I know, 
+   are hard to add for different reasons, such as `i18n`, `subtleCrypto` among others. There is also 
+   an ongoing effort to increase the compatibility with web environments by bringing the 
+   [WebAPIs to the React Native](https://github.com/microsoft/rnx-kit/pull/2504). 
 
-Having a package that can iterate separately, working on adding missing features
-independently of React Native UI layer would make bringing the support faster.
-Currently, React Native tightly couples its feature and UI code, making them non-separable. 
-Given that React Native plans on integrating more closely with WebAPIs (or a subset), this
-coupling makes it hard to work on these APIs as well as test them, slowing down the development speed,
-as we need to create a UI to even be able to test them, or otherwise is very hard to do (as it seems
-to not be a supported development path).
+4. Having a package that can iterate separately, working on adding missing features
+   independently of React Native UI layer would make bringing the support faster.
+   Currently, React Native tightly couples its feature and UI code, making them non-separable. 
+   Given that React Native plans on integrating more closely with WebAPIs (or a subset), this
+   coupling makes it hard to work on these APIs as well as test them, slowing down the development speed,
+   as we need to create a UI to even be able to test them, or otherwise is very hard to do (as it seems
+   to not be a supported development path).
 
-It should be possible to alter or swap some parts of React Native without creating and maintaining
-a fork or a long list of internal patches. A plug-and-play architecture is a sign of good design,
-allows greater modularity, and facilities separation of concerns and decoupling.
+5. It should be possible to alter or swap some parts of React Native without creating and maintaining
+   a fork or a long list of internal patches. A plug-and-play architecture is a sign of good design,
+   allows greater modularity, and facilities separation of concerns and decoupling.
 
-It should be possible to replace the runtime layer with another implementation,
-that can be, for example, more tailored towards embedded devices or requires integration
-with client provided solutions.
+6. It should be possible to replace the runtime layer with another implementation,
+   that can be, for example, more tailored towards embedded devices or requires integration
+   with client provided solutions.
 
 ### Goals
 
